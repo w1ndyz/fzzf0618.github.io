@@ -1,0 +1,6 @@
+# source 'https://rubygems.org'
+source 'https://gems.ruby-china.org'
+gem 'jekyll'
+gem 'jekyll-archives'
+gem 'jekyll-sitemap'
+gem 'jekyll-paginate'
