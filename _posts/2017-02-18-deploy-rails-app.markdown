@@ -1,10 +1,10 @@
 ---
 layout: post
 title:  “How to deploy Rails app with Cap3, puma and Nginx  on Ubuntu 14.04!”
-date:   2016-12-18 08:43:59
+date:   2017-02-18 08:43:59
 author: Chris Wang
 categories: ROR
-tags:	deploy rails app
+tags:	deploy rails capistrano3 puma mysql nginx
 cover:  "/assets/instacode.png"
 ---
 
@@ -17,9 +17,9 @@ Ruby On Rails 应用的部署方式有很多种。比如capistrano, mina, heroku
 ## 第二步, 安装Rbenv, 并且配置Ruby
 首先，我们安装Rbenv
 
-`
+```
 $ sudo apt-get update
-`
+```
 
 安装rbenv和ruby的一些依赖
 
