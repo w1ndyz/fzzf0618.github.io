@@ -1,10 +1,10 @@
 ---
 layout: post
-title:  "Welcome to Jekyll!"
+title:  “How to deploy Rails app with Cap3, puma and Nginx  on Ubuntu 14.04!”
 date:   2015-04-18 08:43:59
-author: Ben Centra
+author: Chris Wang
 categories: ROR
-tags:	jekyll welcome
+tags:	deploy rails app
 cover:  "/assets/instacode.png"
 ---
 
