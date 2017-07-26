@@ -1,74 +1,100 @@
 ---
 layout: post
 title:  “How to deploy Rails app with Cap3, puma and Nginx  on Ubuntu 14.04!”
-date:   2015-04-18 08:43:59
+date:   2016-12-18 08:43:59
 author: Chris Wang
 categories: ROR
 tags:	deploy rails app
 cover:  "/assets/instacode.png"
 ---
 
-You’ll find this post in your `_posts` directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run `jekyll serve`, which launches a web server and auto-regenerates your site when a file is updated.
+## 简介
+Ruby On Rails 应用的部署方式有很多种。比如capistrano, mina, heroku, passenger等等。在这里介绍的是capistrano3, 在Ubuntu 14.04的机器上部署, 所需要的包括ruby的环境, rbenv版本控制, nginx, mysql, puma, ssh的设置等等。
 
-## Adding New Posts
+## 第一步, 设置ssh登录
+这里推荐学习阮一峰老师的[Linux服务器的初步配置流程](http://www.ruanyifeng.com/blog/2014/03/server_setup.html)。在这里面需要注意的是:一般像Aliyun的服务器,或者腾讯云的服务器,完成前面三个步骤就行了。
 
-To add new posts, simply add a file in the `_posts` directory that follows the convention `YYYY-MM-DD-name-of-post.ext` and includes the necessary front matter. Take a look at the source for this post to get an idea about how it works.
+## 第二步, 安装Rbenv, 并且配置Ruby
+首先，我们安装Rbenv
 
-### Tags and Categories
+`
+$ sudo apt-get update
+`
 
-If you list one or more categories or tags in the front matter of your post, they will be included with the post on the page as links. Clicking the link will bring you to an auto-generated archive page for the category or tag, created using the [jekyll-archive][jekyll-archive] gem.
+安装rbenv和ruby的一些依赖
 
-### Cover Images
+```
+$ sudo apt-get install git-core curl zlib1g-dev build-essential libssl-dev libreadline-dev libyaml-dev libsqlite3-dev sqlite3 libxml2-dev libxslt1-dev libcurl4-openssl-dev python-software-properties libffi-dev
+```
 
-To add a cover image to your post, set the "cover" property in the front matter with the relative URL of the image (i.e. <code>cover: "/assets/cover_image.jpg"</code>).
+现在我们安装好了rbenv, 运行下面的命令来配置好它。
 
-### Code Snippets
+```
+$ cd
+$ git clone git://github.com/sstephenson/rbenv.git .rbenv
+$ echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
+$ echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
+$
+$ git clone git://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
+$ echo 'export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"' >> ~/.bash_profile
+$ source ~/.bash_profile
+```
 
-You can use [highlight.js][highlight] to add syntax highlight code snippets:
+现在我们来安装ruby。
 
-Use the [Liquid][liquid] `{% raw %}{% highlight <language> %}{% endraw %}` tag to add syntax highlighting to code snippets.
+```
+rbenv install -v 2.4.0
+rbenv global 2.4.0
+```
+参数`global`表示全局设置ruby的默认版本。如果想设置其他的版本，可以参考rbenv的其他命令去配置，这里就不详细说明了。
 
-For instance, this template...
-{% highlight html %}
-{% raw %}{% highlight javascript %}    
-function demo(string, times) {    
-  for (var i = 0; i < times; i++) {    
-    console.log(string);    
-  }    
-}    
-demo("hello, world!", 10);
-{% endhighlight %}{% endraw %}
-{% endhighlight %}
+下面，我们来验证一下ruby的版本。
 
-...will come out looking like this:
+```
+$ ruby -v
+```
+你可能还需要安装`bundler`去管理你的依赖。
 
-{% highlight javascript %}
-function demo(string, times) {
-  for (var i = 0; i < times; i++) {
-    console.log(string);
-  }
-}
-demo("hello, world!", 10);
-{% endhighlight %}
+```
+$ gem install bundler
+```
 
-Syntax highlighting is done using [highlight.js][highlight]. You can change the active theme in [head.html](https://github.com/bencentra/centrarium/blob/2dcd73d09e104c3798202b0e14c1db9fa6e77bc7/_includes/head.html#L15).
+## 第三步, 安装Rails
 
-### Images
+使用相同的用户, 安装不同的rails版本可以用命令`-v`来控制。
+```
+$ gem install rails
+```
+可以运行下面的命令, 让rbenv使用可执行文件。
+```
+$ gem install rails
+```
+验证你的rails版本, 可以用：
+```
+$ rails -v
+```
 
-Lightbox has been enabled for images. To create the link that'll launch the lightbox, add <code>data-lightbox</code> and <code>data-title</code> attributes to an <code>&lt;a&gt;</code> tag around your <code>&lt;img&gt;</code> tag. The result is:
+## 第四步, 安装对应的数据库mysql(以mysql为例)。
 
-<a href="//bencentra.com/assets/images/falcon9_large.jpg" data-lightbox="falcon9-large" data-title="Check out the Falcon 9 from SpaceX">
-  <img src="//bencentra.com/assets/images/falcon9_small.jpg" title="Check out the Falcon 9 from SpaceX">
-</a>
-
-For more information, check out the [Lightbox][lightbox] website.
-
-Check out the [Jekyll docs][jekyll] for more info on how to get the most out of Jekyll. File all bugs/feature requests at [Jekyll’s GitHub repo][jekyll-gh]. If you have questions, you can ask them on [Jekyll’s dedicated Help repository][jekyll-help].
-
-[jekyll]:      http://jekyllrb.com
-[jekyll-gh]:   https://github.com/jekyll/jekyll
-[jekyll-help]: https://github.com/jekyll/jekyll-help
-[highlight]:   https://highlightjs.org/
-[lightbox]:    http://lokeshdhakar.com/projects/lightbox2/
-[jekyll-archive]: https://github.com/jekyll/jekyll-archives
-[liquid]: https://github.com/Shopify/liquid/wiki/Liquid-for-Designers
+你需要运行下面的命令。
+```
+$ sudo apt-get update
+$ sudo apt-get install mysql-server
+```
+我们是以mysql 5.6为例子来安装的。
+```
+$ sudo apt-get update
+$ sudo apt-get install mysql-server-5.6
+```
+下面配置你的mysql。
+```
+$ sudo mysql_secure_installation
+```
+运行这个命令之后, 会创建你的password, 你可以直接回车不设置, 也可以设置, 你需要记牢的你的password。接下来, 会创建mysql的目录。安装成功后, 可以运行下面的命令查看版本:
+```
+$ mysql --version
+```
+你会看到和下面相似的回复:
+```
+mysql  Ver 14.14 Distrib 5.6.0, for debian-linux-gnu (x86_64) using readline 6.3
+```
