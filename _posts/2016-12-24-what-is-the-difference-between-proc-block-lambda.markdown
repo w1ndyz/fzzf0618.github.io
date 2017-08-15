@@ -42,6 +42,7 @@ lam.call
 首先我们来看一下`Proc`和`Block`的区别：
 
 1. `Proc`是对象, 但是`Block`不是
+
 ```
 p = Proc.new { puts "Hello World" }
 
@@ -54,7 +55,9 @@ p       # returns a proc object '#<Proc:0x007f96b1a60eb0@(irb):46>'
 a = { puts "Hello World"}   # syntax error
 [1,2,3].each {|x| puts x*2} # only works as part of the syntax of a method call
 ```
+
 2. 参数列表中最多只能有一个`Block`, 但是`Proc`可以有多个
+
 ```
 def multiple_procs(proc1, proc2)
   proc1.call
@@ -77,7 +80,9 @@ lam = lambda { puts "Hello World" }
 proc.class # returns 'Proc'
 lam.class  # returns 'Proc'
 ```
+
 它们的不同之处在于返回(`return`)的地方不同，且`lambda`会严格检查传入的参数。
+
 
 ```
 lam = lambda { |x| puts x }    # creates a lambda that takes 1 argument
@@ -105,8 +110,10 @@ def lambda_test
 end
 
 lambda_test                 # calling lambda_test prints 'Hello World'
+
 #我们可以看见在lam.call之后，仍然运行了puts操作
 ```
+
 ```
 def proc_test
   proc = Proc.new { return }
