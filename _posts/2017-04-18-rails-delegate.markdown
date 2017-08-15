@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Rails delegate的理解和用法"
+title:  “Rails delegate的理解和用法”
 date:   2017-01-15 08:43:59
 author: Chris Wang
 categories: ROR
