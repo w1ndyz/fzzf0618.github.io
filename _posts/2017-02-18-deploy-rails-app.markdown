@@ -12,7 +12,7 @@ cover:  "/assets/instacode.png"
 Ruby On Rails 应用的部署方式有很多种。比如capistrano, mina, heroku, passenger等等。在这里介绍的是capistrano3, 在Ubuntu 14.04的机器上部署, 所需要的包括ruby的环境, rbenv版本控制, nginx, mysql, puma, ssh的设置等等。
 
 ## 第一步, 设置ssh登录
-这里推荐学习阮一峰老师的[Linux服务器的初步配置流程](http://www.ruanyifeng.com/blog/2014/03/server_setup.html)。在这里面需要注意的是:一般像Aliyun的服务器,或者腾讯云的服务器,完成前面三个步骤就行了。
+这里推荐学习阮一峰老师的[Linux服务器的初步配置流程](http://www.ruanyifeng.com/blog/2014/03/server_setup.html)。在这里面需要注意的是: 一般像Aliyun的服务器,或者腾讯云的服务器,完成前面三个步骤就行了。
 
 ## 第二步, 安装Rbenv, 并且配置Ruby
 首先，我们安装Rbenv
