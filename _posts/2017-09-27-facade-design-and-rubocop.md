@@ -7,7 +7,7 @@ categories: ROR
 tags: rails ruby facade rubocop
 ---
 
-# ## 引言
+## 引言
 这段时间做项目,完成度不是很好，但是从项目中学到了一些好的东西，总结一下。
 * `Facade`
 这么做的好处是简化了`model`和`controller`的代码。一旦到项目后期，就只需要在`Facade`下修改业务逻辑，比较清晰明了。
