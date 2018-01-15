@@ -3,7 +3,7 @@ layout: post
 title:  “如何创建一个Gem包”
 date:   2017-05-29 10:31:59
 author: Chris Wang
-categories: ROR
+categories: ror
 tags: ruby gem
 ---
 

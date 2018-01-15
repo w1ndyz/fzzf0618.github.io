@@ -3,7 +3,7 @@ layout: post
 title:  “Docker基本命令详解”
 date:   2018-01-15 11:38:59
 author: Chris Wang
-categories: Docker
+categories: docker
 tags: docker commads 详解
 ---
 

@@ -3,7 +3,7 @@ layout: post
 title:  “近期工作所遇到的问题”
 date:   2017-09-27 10:48:59
 author: Chris Wang
-categories: ROR
+categories: ror
 tags: rails ruby facade rubocop
 ---
 

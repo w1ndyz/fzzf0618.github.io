@@ -3,7 +3,7 @@ layout: post
 title:  “Ruby最佳实践”
 date:   2017-09-20 08:43:59
 author: Chris Wang
-categories: ROR
+categories: ror
 tags: rails ruby best practices
 ---
 

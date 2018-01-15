@@ -3,7 +3,7 @@ layout: post
 title:  “Rails Polymorphic 多态关联”
 date:   2017-10-08 16:09:59
 author: Chris Wang
-categories: ROR
+categories: ror
 tags: rails polymorphic 多态关联
 ---
 

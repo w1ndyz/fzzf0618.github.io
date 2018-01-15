@@ -48,13 +48,13 @@ jekyll-archives:
 
 # Category descriptions (for archive pages)
 descriptions:
-  - cat: Ror
+  - cat: ror
     desc: "Ruby On Rails."
 
-  - cat: Funny
+  - cat: funny
     desc: "Where i interested in."
 
-  - cat: Docker
+  - cat: docker
     desc: "Docker"
 # Social icons and sharing options
 #

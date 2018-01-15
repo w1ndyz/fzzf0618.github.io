@@ -3,7 +3,7 @@ layout: post
 title:  “Ruby中Proc, lambda, block的不同之处 ”
 date:   2016-12-24 10:43:59
 author: Chris Wang
-categories: ROR
+categories: ror
 tags:	ruby lambda proc block
 cover:  "/assets/instacode.png"
 ---

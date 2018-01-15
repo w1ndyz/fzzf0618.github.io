@@ -3,7 +3,7 @@ layout: post
 title:  “Rails ActiveAdmin Customize Download link”
 date:   2018-01-01 23:29:59
 author: Chris Wang
-categories: ROR
+categories: ror
 tags: rails activeadmin down_links
 ---
 

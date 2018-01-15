@@ -3,7 +3,7 @@ layout: post
 title:  “How to deploy Rails app with Cap3, puma and Nginx  on Ubuntu 14.04!”
 date:   2017-02-18 08:43:59
 author: Chris Wang
-categories: ROR
+categories: ror
 tags:	deploy rails capistrano3 puma mysql nginx
 cover:  "/assets/instacode.png"
 ---

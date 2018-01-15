@@ -3,7 +3,7 @@ layout: post
 title:  “RSpec的最佳实践”
 date:   2017-09-30 15:34:59
 author: Chris Wang
-categories: ROR
+categories: ror
 tags: rspec best practice
 ---
 
