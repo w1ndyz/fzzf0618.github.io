@@ -1,0 +1,23 @@
+I"v
+<h3 id="了解quic协议">了解QUIC协议</h3>
+<h5 id="背景">背景：</h5>
+<p>在家里我们都是使用的wifi，在外面使用4G甚至是5G。我们都很清楚，有时候从wifi切换到4G的时候，会有网络的延迟，甚至是卡顿，丢失网络连接。而QUIC协议就是为了解决这样的问题，所提出的。他可以将你的App在没有人后修改的情况下，提速接近20%以上，不会断线，不需要重连，重要的是，用户没有任何感知。</p>
+
+<h5 id="什么是quic">什么是QUIC？</h5>
+<p>QUIC全称是<code class="highlighter-rouge">quick udp internet connection</code>。从字面意思我们可以看出，它基于udp协议，翻译过来是快速的udp互联网连接。因为是udp，他不需要三次握手，他可以避免队头的堵塞，可以多路复用，向前冗余纠错。我们知道tcp协议需要建立握手，延迟较大，队头阻塞(可靠性机制)，且历史悠久。所以QUIC选择了udp协议:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        1) 没有三次握手 -&gt; 优化了延迟
+        2) 在应用层实现了类似tcp的可靠性机制。(网络分层: 应用层，传输层，网络层， 数据链路层， 物理层)
+        3) TLS的安全性和HTTP2的并发性。
+</code></pre></div></div>
+
+<p>不同于udp的不可靠，容易丢失数据，QUIC是可靠的，可插拔的。他使用<code class="highlighter-rouge">packet number</code> 代替了<code class="highlighter-rouge">tcp</code>的<code class="highlighter-rouge"> sequence number</code>。并且严格递增，即使在传输中丢失了，重传的packet number 不在是n，而是一个比n大的值。一个流可以传递多个packet，类似于一个马路有多辆车行驶，之间并没有以来的关系。</p>
+
+<h5 id="总结">总结:</h5>
+<p>QUIC尝试在计算机和服务器之间建立<code class="highlighter-rouge">HTTPS</code>连接，用UDP替换TCP，所有连接都是完全加密的。QUIC采用纠错码，以便建立丢失的数据。QUIC能自主的控制阻塞，因为他不依赖TCP来传输和排序，能够明智的决定哪个正在传输的流需要等待，哪些流可以在数据包发生错误时继续传输。QUIC是一个基于<code class="highlighter-rouge">HTTP/3</code>的协议，他控制了连接的所有方面，所以可以将连接和握手控制在一次传输当中。</p>
+
+<h5 id="相关资料">相关资料:</h5>
+<ol>
+  <li><a href="https://blog.cloudflare.com/the-quicening/">QUIC介绍</a></li>
+  <li><a href="https://zhuanlan.zhihu.com/p/32553477">科普：QUIC协议原理分析 - 知乎</a></li>
+</ol>
+:ET

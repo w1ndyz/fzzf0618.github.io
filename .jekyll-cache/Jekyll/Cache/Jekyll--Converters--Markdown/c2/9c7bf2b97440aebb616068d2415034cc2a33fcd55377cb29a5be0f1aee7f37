@@ -1,0 +1,6 @@
+I"�<h2 id="关于rspec">关于RSpec</h2>
+<p>RSpec是一个行为驱动测试框架(BDD)。可以写出高可读性的测试，来测试出我们所开发的程序。在RSpec中有很多方法关键字，下面我来介绍一下。</p>
+<ul>
+  <li><code class="highlighter-rouge">describe</code>，<code class="highlighter-rouge">context</code>，<code class="highlighter-rouge">subject</code></li>
+</ul>
+:ET

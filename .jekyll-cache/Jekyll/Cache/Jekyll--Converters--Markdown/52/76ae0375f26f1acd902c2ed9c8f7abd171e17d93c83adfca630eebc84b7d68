@@ -1,0 +1,247 @@
+I"�?<h3 id="下载地址">下载地址</h3>
+
+<ol>
+  <li>去<code class="highlighter-rouge">http://dl.mycat.io/</code>下载对应的平台安装包</li>
+  <li>下载版本为<code class="highlighter-rouge">1.6-RELEASE/</code></li>
+  <li>把mysql文件夹移动到 <code class="highlighter-rouge">/usr/local/</code> 下</li>
+  <li>
+    <p>需要安装Java</p>
+
+    <ul>
+      <li>首先下载jdk, 版本<code class="highlighter-rouge">&gt;=1.8</code></li>
+      <li>解压 <code class="highlighter-rouge">tar -zxvf jdk-8u91-linux-x64.tar.gz</code></li>
+      <li>设置JAVA_HOME：修改配置文件<code class="highlighter-rouge">vi /etc/profile</code>, 最后一行添加以下代码
+        <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>export JAVA_HOME=/usr/java/jdk1.8.0_91   
+export CLASSPATH=.:$JAVA_HOME/jre/lib/rt.jar:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar  
+export PATH=$PATH:$JAVA_HOME/bin
+</code></pre></div>        </div>
+      </li>
+      <li>命令：<code class="highlighter-rouge">source /etc/profile</code> 使文件立即生效</li>
+      <li>命令：<code class="highlighter-rouge">java -version</code> 检测是否安装成功</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="配置">配置</h3>
+<p>–bin 启动目录</p>
+
+<p>–conf 配置文件存放配置文件:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>--server.xml：是Mycat服务器参数调整和用户授权的配置文件。
+
+--schema.xml：是逻辑库定义和表以及分片定义的配置文件。
+
+--rule.xml：  是分片规则的配置文件，分片规则的具体一些参数信息单独存放为文件，也在这个目录下，配置文件修改需要重启MyCAT。
+
+--log4j.xml： 日志存放在logs/log中，每天一个文件，日志的配置是在conf/log4j.xml中，根据自己的需要可以调整输出级别为debug                           debug级别下，会输出更多的信息，方便排查问题。
+
+--autopartition-long.txt,partition-hash-int.txt,sequence_conf.properties， sequence_db_conf.properties 分片相关的id分片规则配置文件
+
+--lib	    MyCAT自身的jar包或依赖的jar包的存放目录。
+
+--logs        MyCAT日志的存放目录。日志存放在logs/log中，每天一个文件
+</code></pre></div></div>
+
+<p>逻辑库配置</p>
+
+<p>配置<code class="highlighter-rouge">server.xml</code></p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="cp">&lt;!DOCTYPE mycat:server SYSTEM "server.dtd"&gt;</span>
+<span class="nt">&lt;mycat:server</span> <span class="na">xmlns:mycat=</span><span class="s">"http://io.mycat/"</span><span class="nt">&gt;</span>
+	<span class="nt">&lt;system&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"useSqlStat"</span><span class="nt">&gt;</span>0<span class="nt">&lt;/property&gt;</span>  <span class="c">&lt;!-- 1为开启实时统计、0为关闭 --&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"useGlobleTableCheck"</span><span class="nt">&gt;</span>0<span class="nt">&lt;/property&gt;</span>  <span class="c">&lt;!-- 1为开启全加班一致性检测、0为关闭 --&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"sequnceHandlerType"</span><span class="nt">&gt;</span>2<span class="nt">&lt;/property&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"processorBufferPoolType"</span><span class="nt">&gt;</span>0<span class="nt">&lt;/property&gt;</span>
+          <span class="c">&lt;!--分布式事务开关，0为不过滤分布式事务，1为过滤分布式事务（如果分布式事务内只涉及全局表，则不过滤），2为不过滤分布式事务,但是记录分布式事务日志--&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"handleDistributedTransactions"</span><span class="nt">&gt;</span>0<span class="nt">&lt;/property&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"useOffHeapForMerge"</span><span class="nt">&gt;</span>1<span class="nt">&lt;/property&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"memoryPageSize"</span><span class="nt">&gt;</span>1m<span class="nt">&lt;/property&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"spillsFileBufferSize"</span><span class="nt">&gt;</span>1k<span class="nt">&lt;/property&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"useStreamOutput"</span><span class="nt">&gt;</span>0<span class="nt">&lt;/property&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"systemReserveMemorySize"</span><span class="nt">&gt;</span>384m<span class="nt">&lt;/property&gt;</span>
+        <span class="nt">&lt;/system&gt;</span>
+        <span class="c">&lt;!--给schema分配权限--&gt;</span>
+        <span class="nt">&lt;user</span> <span class="na">name=</span><span class="s">"root"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"password"</span><span class="nt">&gt;</span>123456<span class="nt">&lt;/property&gt;</span>
+          <span class="c">&lt;!-- 这里可以配置多个schema --&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"schemas"</span><span class="nt">&gt;</span>GCCDB<span class="nt">&lt;/property&gt;</span>
+        <span class="nt">&lt;/user&gt;</span>
+
+        <span class="nt">&lt;user</span> <span class="na">name=</span><span class="s">"user"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"password"</span><span class="nt">&gt;</span>user<span class="nt">&lt;/property&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"schemas"</span><span class="nt">&gt;</span>GCCDB<span class="nt">&lt;/property&gt;</span>
+          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"readOnly"</span><span class="nt">&gt;</span>true<span class="nt">&lt;/property&gt;</span>
+        <span class="nt">&lt;/user&gt;</span>
+  <span class="nt">&lt;/mycat:server&gt;</span>
+</code></pre></div></div>
+
+<p>配置<code class="highlighter-rouge">schema.xml</code></p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0"?&gt;</span>
+<span class="cp">&lt;!DOCTYPE mycat:schema SYSTEM "schema.dtd"&gt;</span>
+<span class="nt">&lt;mycat:schema</span> <span class="na">xmlns:mycat=</span><span class="s">"http://io.mycat/"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;schema</span> <span class="na">name=</span><span class="s">"GCCDB"</span> <span class="na">checkSQLschema=</span><span class="s">"false"</span> <span class="na">sqlMaxLimit=</span><span class="s">"100"</span> <span class="na">dataNode=</span><span class="s">"dn1"</span><span class="nt">&gt;</span>    
+	<span class="nt">&lt;/schema&gt;</span>
+  <span class="nt">&lt;dataNode</span> <span class="na">name=</span><span class="s">"dn1"</span> <span class="na">dataHost=</span><span class="s">"localhost1"</span> <span class="na">database=</span><span class="s">"gcc"</span> <span class="nt">/&gt;</span>  
+  <span class="c">&lt;!-- balance="1" 读写分离 --&gt;</span>
+	<span class="nt">&lt;dataHost</span> <span class="na">name=</span><span class="s">"localhost1"</span> <span class="na">maxCon=</span><span class="s">"1000"</span> <span class="na">minCon=</span><span class="s">"10"</span> <span class="na">balance=</span><span class="s">"1"</span> <span class="na">writeType=</span><span class="s">"0"</span> <span class="na">dbType=</span><span class="s">"mysql"</span> <span class="na">dbDriver=</span><span class="s">"native"</span> <span class="na">switchType=</span><span class="s">"1"</span>  <span class="na">slaveThreshold=</span><span class="s">"100"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;heartbeat&gt;</span>select user()<span class="nt">&lt;/heartbeat&gt;</span>
+        <span class="nt">&lt;writeHost</span> <span class="na">host=</span><span class="s">"hostM1"</span> <span class="na">url=</span><span class="s">"localhost:3306"</span> <span class="na">user=</span><span class="s">"root"</span> <span class="na">password=</span><span class="s">""</span><span class="nt">&gt;</span>
+              <span class="nt">&lt;readHost</span> <span class="na">host=</span><span class="s">"hostS2"</span> <span class="na">url=</span><span class="s">"192.168.125.117:3306"</span> <span class="na">user=</span><span class="s">"root"</span> <span class="na">password=</span><span class="s">""</span> <span class="nt">/&gt;</span>  
+        <span class="nt">&lt;/writeHost&gt;</span>  
+  <span class="nt">&lt;/dataHost&gt;</span>  
+<span class="nt">&lt;/mycat:schema&gt;</span>
+</code></pre></div></div>
+<h4 id="balance-属性">balance 属性</h4>
+
+<p>负载均衡类型，目前的取值有 3 种：</p>
+
+<ul>
+  <li>balance=”0”, 不开启读写分离机制，所有读操作都发送到当前可用的 writeHost 上。</li>
+  <li>balance=”1”，全部的 readHost 与 stand by writeHost 参与 select 语句的负载均衡，简单的说，当双主双从模式(M1-&gt;S1，M2-&gt;S2，并且 M1 与 M2 互为主备)，正常情况下，M2,S1,S2 都参与 select 语句的负载均衡。</li>
+  <li>balance=”2”，所有读操作都随机的在 writeHost、readhost 上分发。</li>
+  <li>balance=”3”，所有读请求随机的分发到 wiriterHost 对应的 readhost 执行，writerHost 不负担读压 
+力，注意 balance=3 只在 1.4 及其以后版本有，1.3 没有。</li>
+</ul>
+
+<h4 id="writetype-属性">writeType 属性</h4>
+<p>write切换, 目前的取值有 2 种：</p>
+
+<ul>
+  <li>writeType=”0”, 所有写操作发送到配置的第一个 writeHost，第一个挂了切到还生存的第二个writeHost，重新启动后以切换后的为准，切换记录在配置文件中:dnindex.properties .</li>
+  <li>writeType=”1”，所有写操作都随机的发送到配置的 writeHost，1.5 以后废弃不推荐。</li>
+</ul>
+
+<h4 id="switchtype-属性">switchType 属性</h4>
+
+<ul>
+  <li>-1 表示不自动切换</li>
+  <li>1 默认值，自动切换</li>
+  <li>2 基于 MySQL 主从同步的状态决定是否切换</li>
+</ul>
+
+<p>心跳语句为 <code class="highlighter-rouge">show slave status</code> 或 <code class="highlighter-rouge">select user()</code></p>
+<h4 id="slavethreshold-属性">slaveThreshold 属性</h4>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>此时意味着开启 MySQL 主从复制状态绑定的读写分离与切换机制，Mycat 心跳机
+制通过检测 show slave status 中的 "Seconds_Behind_Master", "Slave_IO_Running",
+"Slave_SQL_Running" 三个字段来确定当前主从同步的状态以及 Seconds_Behind_Master 主从复制时延，
+当 Seconds_Behind_Master&gt;slaveThreshold 时，读写分离筛选器会过滤掉此 Slave 机器，防止读到很久之
+前的旧数据，而当主节点宕机后，切换逻辑会检查 Slave 上的 Seconds_Behind_Master 是否为 0，为 0 时则
+表示主从同步，可以安全切换，否则不会切换。
+</code></pre></div></div>
+
+<h3 id="mysql配置">Mysql配置</h3>
+<p>备注:</p>
+<ol>
+  <li>主从数据库版本最好保持一致</li>
+  <li>主库负责写入操作</li>
+  <li>从库负责读</li>
+</ol>
+
+<p>主库master修改:</p>
+
+<ol>
+  <li>找到my.cnf文件,在<code class="highlighter-rouge">[mysqld]</code>部分插入下面几行:
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   log-bin=mysql-bin #开启二进制日志
+   server-id=1 #设置server-id
+</code></pre></div>    </div>
+  </li>
+  <li>重启mysql，创建用于同步的用户账号
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>     #进入mysql
+     mysql -u root -p
+</code></pre></div>    </div>
+    <pre><code class="language-mysql">     mysql&gt; CREATE USER 'repl'@'%' IDENTIFIED BY '123456';#创建用户
+     mysql&gt; GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';#分配权限
+     mysql&gt; flush privileges;   #刷新权限
+</code></pre>
+  </li>
+  <li>查看master状态，记录二进制文件名(mysql-bin.000001)和位置(1224)：
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   mysql&gt; SHOW MASTER STATUS;
+   +------------------+----------+--------------+------------------+-------------------+
+   | File             | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
+   +------------------+----------+--------------+------------------+-------------------+
+   | mysql-bin.000001 |     1224 |              |                  |                   |
+   +------------------+----------+--------------+------------------+-------------------+
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>从库slave修改:</p>
+<ol>
+  <li>
+    <p>修改mysql配置:</p>
+
+    <p>同样找到my.cnf配置文件，添加server-id</p>
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   server-id=2 #设置server-id
+</code></pre></div>    </div>
+  </li>
+  <li>重启mysql，打开mysql会话，执行同步SQL语句(需要主服务器主机名，登陆凭据，二进制文件的名称和位置)：
+    <pre><code class="language-mysql">   mysql&gt; CHANGE MASTER TO MASTER_HOST='192.168.125.97', #主库IP
+   -&gt;  MASTER_USER='repl',
+   -&gt;  MASTER_PASSWORD='123456',
+   -&gt;  MASTER_LOG_FILE='mysql-bin.000001', #与主库的File值对应
+   -&gt;  MASTER_LOG_POS=1224; #与主库的Position值对应
+</code></pre>
+  </li>
+  <li>启动slave同步进程：
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   mysql&gt; start slave;
+</code></pre></div>    </div>
+  </li>
+  <li>查看slave状态：
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   mysql&gt; show slave status\G;
+       *************************** 1. row ***************************
+               Slave_IO_State: Waiting for master to send event
+                   Master_Host: 192.168.125.97
+                   Master_User: repl
+                   Master_Port: 3306
+                 Connect_Retry: 60
+               Master_Log_File: mysql-bin.000001
+           Read_Master_Log_Pos: 1224
+               Relay_Log_File: iMac-4-relay-bin.000001
+                 Relay_Log_Pos: 320
+         Relay_Master_Log_File: mysql-bin.000001
+             Slave_IO_Running: Yes
+             Slave_SQL_Running: Yes
+             ...............................  
+     1 row in set (0.02 sec)
+
+     ERROR:
+     No query specified
+</code></pre></div>    </div>
+
+    <p>看到最后</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   Slave_IO_Running: Yes
+   Slave_SQL_Running: Yes
+</code></pre></div>    </div>
+
+    <p>这两个值都为<code class="highlighter-rouge">Yes</code>, 则配置成功</p>
+  </li>
+</ol>
+
+<h3 id="linux">linux：</h3>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./mycat start 启动
+
+./mycat stop 停止
+
+./mycat console 前台运行
+
+./mycat install 添加到系统自动启动（暂未实现）
+
+./mycat remove 取消随系统自动启动（暂未实现）
+
+./mycat restart 重启服务
+
+./mycat pause 暂停
+
+./mycat status 查看启动状态
+</code></pre></div></div>
+
+<h3 id="测试主从读写分离是否成功">测试主从读写分离是否成功</h3>
+<p>查看是否启动</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mysql -h192.168.0.1 -P8806 -urepl -p123456 #-h localhost
+</code></pre></div></div>
+<p>进入mysql,通过写查询或者插入语句，观察数据是否同步</p>
+:ET

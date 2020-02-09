@@ -1,0 +1,134 @@
+I"<h2 id="引言">引言</h2>
+<p>最近上班整理了一下ruby的最佳实践,这里有的都是自己整理过后的,记下来以备后用。</p>
+
+<ol>
+  <li>代码缩进</li>
+</ol>
+
+<p>#缩进两格</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def A
+  puts 'a'
+end
+</code></pre></div></div>
+<p>#空格缩进</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[a, b, c].map{ ... }
+</code></pre></div></div>
+<p>在逗号<code class="highlighter-rouge">, ; :</code>后面加个空格，增加可读性</p>
+
+<p>#<code class="highlighter-rouge">case</code>和<code class="highlighter-rouge">when</code>是同一级</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>case
+when A &lt; 5
+  puts 'Not again!'
+when B &gt; 100
+  puts 'Too long!'
+when C &gt; 200
+  puts "It's too late"
+else
+  ...
+end
+</code></pre></div></div>
+
+<p>#在<code class="highlighter-rouge">attr_...</code>后面换行</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>class Foo
+  attr_accessor :foo
+
+  def foo
+    # 做一些事情
+  end
+end
+</code></pre></div></div>
+<p>#使用<code class="highlighter-rouge">_</code>语法改善大数的数值字面量的可读性。</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>num = 1_000_000
+</code></pre></div></div>
+<ol>
+  <li>定义方法和参数</li>
+</ol>
+
+<p>#有参数的方法加()</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def A
+  ...
+end
+
+def B(baz, foo)
+  ...
+end
+</code></pre></div></div>
+<p>#有可选参数，放在后面</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def A(a, b, c = 0, d = 0)
+  ...
+end
+</code></pre></div></div>
+<p>#使用符号而不是字符串做hash的键。</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>hash = { one: 1, two: 2, three: 3 }
+</code></pre></div></div>
+
+<ol>
+  <li>逻辑判断</li>
+</ol>
+
+<p>#if-else</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def A
+  if a
+    ...
+  else
+    ...
+  end
+end
+
+# 如果遇到简单的逻辑，也可以用三目运算符
+def B
+  something ? 'yes' : 'no'
+end
+</code></pre></div></div>
+<p>#不用<code class="highlighter-rouge">and</code>, <code class="highlighter-rouge">or</code>,而是使用<code class="highlighter-rouge">&amp;&amp;</code>, <code class="highlighter-rouge">||</code>
+#如果是否定条件,可以使用<code class="highlighter-rouge">unless</code></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># if
+do_something if !some_condition
+
+# unless
+do_something unless some_condition
+</code></pre></div></div>
+
+<ol>
+  <li>方法调用</li>
+</ol>
+
+<p>#区块中如果有唯一操作, 可以用<code class="highlighter-rouge">&amp;:</code></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>names = ['a', 'b', 'c']
+names.map(&amp;:upcase)
+</code></pre></div></div>
+<p>#链式调用少用<code class="highlighter-rouge">do...end</code>,多使用<code class="highlighter-rouge">{ ... }</code></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>names = ['a', 'b', 'c']
+names.each { |name| puts name }
+names.select { |name| name.start_with?('a') }.map(&amp;:upcase)
+</code></pre></div></div>
+<p>#避免在不需要的情况下使用<code class="highlighter-rouge">self</code>。（只有在调用 self 的修改器、以保留字命名的方法、重载的运算符时才需要）</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def ready?
+  if self.last_reviewed_at &gt; self.last_updated_at
+    self.worker.update(self.content, self.options)
+    self.status = :in_progress
+  end
+  self.status == :verified
+end
+
+def ready?
+  if last_reviewed_at &gt; last_updated_at
+    worker.update(content, options)
+    self.status = :in_progress
+  end
+  status == :verified
+end
+</code></pre></div></div>
+<p>#在没有流程控制的情况下少使用<code class="highlighter-rouge">return</code></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def A(arr)
+  arr.size
+end
+</code></pre></div></div>
+<p>#区块的参数如果没有被使用到, 可以使用<code class="highlighter-rouge">_</code>,作用是可以抑制类似于rubocop发出变量尚未使用的警告</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>result = hash.map { |_, v| v + 1 }
+</code></pre></div></div>
+<p>#当只需要便利key或者value的时候，可以选择：</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>hash.each_key { |k| p k }
+hash.each_value { |v| p v }
+</code></pre></div></div>
+:ET

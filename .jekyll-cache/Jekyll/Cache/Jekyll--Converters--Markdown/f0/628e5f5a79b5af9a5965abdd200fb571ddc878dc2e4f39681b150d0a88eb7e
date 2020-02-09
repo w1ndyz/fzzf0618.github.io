@@ -1,0 +1,11 @@
+I"'<h2 id="引言">引言</h2>
+<p><code class="highlighter-rouge">Gem</code>是一个function的外部集成，它将一些常用，通用的方法集成在一起，更方便调用。</p>
+<ul>
+  <li>创建一个<code class="highlighter-rouge">gem</code>: <code class="highlighter-rouge">bundle gem xxx</code> xxx是gem的名字。</li>
+  <li>需要修改<code class="highlighter-rouge">.gemspec</code>的内容,包括<code class="highlighter-rouge">spec.summary</code>, <code class="highlighter-rouge">spec.description</code>, <code class="highlighter-rouge">spec.homepage</code>。</li>
+  <li>通过<code class="highlighter-rouge">spec.add_dependency</code>添加包的依赖</li>
+  <li><code class="highlighter-rouge">gem build xxx.gemspec</code>在本地创建<code class="highlighter-rouge">gem</code>包。</li>
+  <li><code class="highlighter-rouge">gem push xxx</code>将<code class="highlighter-rouge">gem</code>包push到<code class="highlighter-rouge">https://rubygems.org</code></li>
+  <li>注意<code class="highlighter-rouge">Version</code>的填写，<code class="highlighter-rouge">gem</code>的版本号管理，<code class="highlighter-rouge">0.0.0</code>中第一个0是发布的版本号。中间的0是修改和优化后的版本号，一般随数字递增，这样push到rubygem好管理。</li>
+</ul>
+:ET

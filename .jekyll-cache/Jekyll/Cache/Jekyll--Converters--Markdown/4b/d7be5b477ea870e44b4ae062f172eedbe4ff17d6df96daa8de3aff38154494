@@ -1,0 +1,66 @@
+I"�<h2 id="关于rspec">关于RSpec</h2>
+<p>RSpec是一个行为驱动测试框架(BDD)。可以写出高可读性的测试，来测试出我们所开发的程序。在RSpec中有很多方法关键字，下面我来介绍一下。</p>
+<ul>
+  <li><code class="highlighter-rouge">describe</code>，<code class="highlighter-rouge">context</code>，<code class="highlighter-rouge">subject</code></li>
+</ul>
+
+<p>首先来看一下<code class="highlighter-rouge">describe</code>,<code class="highlighter-rouge">describe</code>是用来描述方法的，我们要先弄清楚是什么样的方法，是类方法还是实例方法:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>describe '.authenticate' do # 类方法用 .
+describe '#admin?' do # 实例方法用 #
+
+</code></pre></div></div>
+<p><code class="highlighter-rouge">context</code>可以让测试更加有条理，保持高度的可读性:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># 一般context的开头用when或者with
+context 'when login' do
+  it 'returns all results' do
+        expect(results.length).to eq(2)
+  end
+end
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">subject</code>是共享变量，当很多个测试都用到同一个变量的时候，可以用<code class="highlighter-rouge">subject{}</code>来避免重复:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>subject { create('user') }
+it '....' do
+    expect(subject.function_name).to eq(...)
+end
+
+# subject也可以命名
+subject(:order) { create('order') }
+it 'active a order' do
+    expect(order.active).to be true
+end
+</code></pre></div></div>
+<ul>
+  <li><code class="highlighter-rouge">let</code>和<code class="highlighter-rouge">let!</code></li>
+</ul>
+
+<p><code class="highlighter-rouge">let</code>是用来创建初始数据的。和<code class="highlighter-rouge">before</code>是一样的。但是比<code class="highlighter-rouge">before(:each)</code>执行的速度更快。<code class="highlighter-rouge">let {...}</code>后面的<code class="highlighter-rouge">block</code>只执行一次,然后缓存起来，提高执行效率。<code class="highlighter-rouge">let</code>和<code class="highlighter-rouge">let!</code>的区别是，<code class="highlighter-rouge">let!</code>是立即创建数据,<code class="highlighter-rouge">let</code>是在需要的时候创建。</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>describe '#run' do
+  subject      { described_class.new(params).run }
+  let(:course) { create(:course) }
+  let!(:course_process_version) { create(:course_process_version, course: course) }
+  let(:params) do
+    {
+      course_id: course.id,
+      name: 'Test',
+      category: 'student',
+      page_identifier: 'S001'
+    }
+  end
+  it 'returns the evidence requirement course' do
+      expect(subject).to include(course: course)
+  end
+end
+</code></pre></div></div>
+
+<p>在测试的时候，我们要考虑到所有的情况。比方说删除一个数据，通常我们只用测试是否删除成功，其实我们还要考虑到的是找不到这个数据怎么办，没有权限删除这条数据怎么办，这些都是要考虑到的。所以现在往往基于<code class="highlighter-rouge">model</code>的测试并不多了，现在更多的是基于用户行为的测试，基于<code class="highlighter-rouge">view</code>层，模仿用户的操作。</p>
+
+<p>另外，在造数据的时候，我们通常使用<code class="highlighter-rouge">FactoryGirl</code>，还有一些假数据可以用<code class="highlighter-rouge">Faker</code>。要减少在<code class="highlighter-rouge">rspec</code>文件中写类似于:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>user = user.create(
+    name: xxx,
+    age: xx,
+    city: xx
+)
+</code></pre></div></div>
+<p>这种写法，太过于冗长，不够方便。</p>
+:ET

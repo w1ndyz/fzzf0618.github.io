@@ -1,0 +1,31 @@
+I"5<p>最近在学习如何部署<code class="highlighter-rouge">Rails App</code>在<code class="highlighter-rouge">Docker</code>上时，将所有的docker命令整理了一下，如下：</p>
+
+<p><code class="highlighter-rouge">docker --help</code> 查看所有的docker命令</p>
+<h5 id="commands">Commands</h5>
+<ul>
+  <li><code class="highlighter-rouge">attach</code> 进入docker容器
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ docker ps -a
+# 列出所有的容器
+CONTAINER ID        IMAGE                    COMMAND                  CREATED             STATUS              PORTS                               NAMES
+b74da051b403        blablablabla   "/bin/sh -c 'python …"   12 minutes ago      Up 12 minutes       51438/tcp, 0.0.0.0:8532-&gt;8888/tcp   www
+$ docker attach b74da051b403
+# 进入ID为b74da051b403的容器
+# 我们还可以通过ssh, nsenter, exec进入, 通过inspect查看容器详细信息
+</code></pre></div>    </div>
+  </li>
+  <li><code class="highlighter-rouge">build</code> 通过<code class="highlighter-rouge">Dockerfile</code>创建镜像</li>
+  <li><code class="highlighter-rouge">commit</code> 创建本地镜像推送到docker pub中。<code class="highlighter-rouge">$ docker push user_name/image_name</code></li>
+  <li><code class="highlighter-rouge">create</code> 创建一个新的容器</li>
+  <li><code class="highlighter-rouge">diff</code> 类似于github, 查看容器内发生改变的文件</li>
+  <li><code class="highlighter-rouge">cp</code> 在容器和主机间相互拷贝文件</li>
+  <li><code class="highlighter-rouge">export</code> 将文件系统打包成<code class="highlighter-rouge">tar</code></li>
+  <li><code class="highlighter-rouge">import</code> 和<code class="highlighter-rouge">export</code>对应, 引入<code class="highlighter-rouge">tar</code>文件，创建新的镜像</li>
+  <li><code class="highlighter-rouge">images</code> 列出所有镜像</li>
+  <li><code class="highlighter-rouge">info</code> 查看docker的系统信息, 与<code class="highlighter-rouge">inspect</code>不同的是, info显示的是docker在主机系统中的内存占用, inspect显示一些配置信息，例如环境变量</li>
+  <li><code class="highlighter-rouge">kill</code>, <code class="highlighter-rouge">stop</code> (1)强制终止容器。(2)终止容器。<code class="highlighter-rouge">stop</code>有option<code class="highlighter-rouge">-t</code>，选择终止延时时间</li>
+  <li><code class="highlighter-rouge">login</code> 登录docker Hub，使用<code class="highlighter-rouge">logout</code>退出</li>
+  <li><code class="highlighter-rouge">logs</code> 查看容器日志</li>
+  <li><code class="highlighter-rouge">ps</code> 查看所有容器</li>
+  <li><code class="highlighter-rouge">pull</code> 从docker pub下载你想要的镜像</li>
+</ul>
+:ET

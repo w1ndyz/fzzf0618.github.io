@@ -1,0 +1,85 @@
+I",<p>在使用docker部署rails项目之前，我们先来介绍gitlab的ci/cd。</p>
+
+<p>Gitlab提供了持续集成(CI Continuous Integration )的服务。在项目中添加<code class="highlighter-rouge">.gitlab-ci.yml</code>文件，并且在gitlab页面配置一个可以使用的<code class="highlighter-rouge">Runner</code>，然后每次提交代码时，都会触发CI的pipline。</p>
+
+<h4 id="gitlab-ciyml">.gitlab-ci.yml</h4>
+
+<p><code class="highlighter-rouge">.gitlab-ci.yml</code>是用来配置CI在我们的项目中做些什么工作。它位于项目的根目录。</p>
+
+<p>在任何的push操作，GitLab都会寻找<code class="highlighter-rouge">.gitlab-ci.yml</code>文件，并对此次commit开始jobs，jobs的内容来源于<code class="highlighter-rouge">.gitlab-ci.yml</code>文件。</p>
+
+<p>一般情况下，运行一个pipline会经过三个阶段: <code class="highlighter-rouge">build</code>, <code class="highlighter-rouge">test</code>, <code class="highlighter-rouge">deploy</code>。这里我们介绍<code class="highlighter-rouge">prebuild</code>,<code class="highlighter-rouge">build</code>。这是基于rails的多阶段部署，详情可以查看<a href="https://ruby-china.org/topics/38766">Ruby China</a>的这一篇帖子。</p>
+
+<p>我们需要先熟悉gitlab-ci的语法，下面是一个示例:</p>
+
+<div class="language-yml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># runner的几个阶段</span>
+<span class="na">stages</span><span class="pi">:</span> 
+  <span class="pi">-</span> <span class="s">prebuild</span>
+  <span class="pi">-</span> <span class="s">build</span>
+
+<span class="na">before_script</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s">export MY_DOCKER_IMAGE_TAG=$(cat $CI_PROJECT_DIR/.current-version)</span>
+  <span class="pi">-</span> <span class="s">export MY_DOCKER_REGISTRY=your_registry_url</span>
+  <span class="pi">-</span> <span class="s">export MY_REGISTRY_USER=your_user</span>
+  <span class="pi">-</span> <span class="s">export MY_REGISTRY_PWD=your_password</span>
+  <span class="pi">-</span> <span class="s">echo $CI_PROJECT_DIR</span>
+  <span class="pi">-</span> <span class="s">echo $PROJECT_IMAGE_NAME</span>
+  <span class="pi">-</span> <span class="s">echo $MY_DOCKER_IMAGE_TAG</span>
+  <span class="pi">-</span> <span class="s">echo $MY_DOCKER_REGISTRY</span>
+  <span class="pi">-</span> <span class="s">echo $MY_REGISTRY_USER</span>
+  <span class="pi">-</span> <span class="s">echo $MY_REGISTRY_PWD</span>
+
+<span class="na">variables</span><span class="pi">:</span>
+  <span class="na">LC_ALL</span><span class="pi">:</span> <span class="s">C.UTF-8</span>
+  <span class="na">LANG</span><span class="pi">:</span> <span class="s">en_US.UTF-8</span>
+  <span class="na">LANGUAGE</span><span class="pi">:</span> <span class="s">en_US.UTF-8</span>
+  <span class="na">DOCKER_DRIVER</span><span class="pi">:</span> <span class="s">overlay</span>
+  <span class="na">PROJECT_IMAGE_NAME</span><span class="pi">:</span> <span class="s">your_image_name</span>
+
+<span class="na">construct_builder</span><span class="pi">:</span>
+  <span class="na">stage</span><span class="pi">:</span> <span class="s">prebuild</span>
+  <span class="na">image</span><span class="pi">:</span> <span class="s">docker:stable</span>
+  <span class="na">services</span><span class="pi">:</span> 
+    <span class="pi">-</span> <span class="s">docker:dind</span>
+  <span class="na">tags</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">dev</span>
+  <span class="na">variables</span><span class="pi">:</span>
+    <span class="na">BUILDER_IMAGE_TAG</span><span class="pi">:</span> <span class="s">$PROJECT_IMAGE_NAME/builder:latest</span>
+  <span class="na">script</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">docker login -u "$MY_REGISTRY_USER" -p "$MY_REGISTRY_PWD" $MY_DOCKER_REGISTRY</span>
+    <span class="pi">-</span> <span class="s">docker pull $MY_DOCKER_REGISTRY/$BUILDER_IMAGE_TAG || echo "No pre-built image found."</span>
+    <span class="pi">-</span> <span class="s">docker build --cache-from $MY_DOCKER_REGISTRY/$BUILDER_IMAGE_TAG -t $MY_DOCKER_REGISTRY/$BUILDER_IMAGE_TAG -f Dockerfile.builder . || docker build -t $MY_DOCKER_REGISTRY/$BUILDER_IMAGE_TAG -f Dockerfile.builder .</span> 
+    <span class="pi">-</span> <span class="s">docker push "$MY_DOCKER_REGISTRY/$BUILDER_IMAGE_TAG"</span>
+
+<span class="na">build_image</span><span class="pi">:</span>
+  <span class="na">stage</span><span class="pi">:</span> <span class="s">build</span>
+  <span class="na">image</span><span class="pi">:</span> <span class="s">docker:stable</span>
+  <span class="na">services</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">docker:dind</span>
+  <span class="na">tags</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">dev</span>
+  <span class="na">variables</span><span class="pi">:</span>
+    <span class="na">BUILDER_IMAGE_TAG</span><span class="pi">:</span> <span class="s">$PROJECT_IMAGE_NAME/builder:latest</span>    
+  <span class="na">script</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">docker login -u "$MY_REGISTRY_USER" -p "$MY_REGISTRY_PWD" $MY_DOCKER_REGISTRY</span>
+    <span class="pi">-</span> <span class="s">docker pull $MY_DOCKER_REGISTRY/$BUILDER_IMAGE_TAG</span>
+    <span class="pi">-</span> <span class="s">docker build --build-arg BUILDER_IMAGE_TAG=$MY_DOCKER_REGISTRY/${BUILDER_IMAGE_TAG} -t "$MY_DOCKER_REGISTRY/$PROJECT_IMAGE_NAME:$MY_DOCKER_IMAGE_TAG.$CI_BUILD_REF_NAME" .</span>
+    <span class="pi">-</span> <span class="s">docker push "$MY_DOCKER_REGISTRY/$PROJECT_IMAGE_NAME:$MY_DOCKER_IMAGE_TAG.$CI_BUILD_REF_NAME"</span>
+  <span class="na">only</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">dev</span>  <span class="c1">#不同的分支，跑的ci不同</span>
+    
+</code></pre></div></div>
+
+<h4 id="配置runner">配置Runner</h4>
+
+<p>Runner可以是虚拟机，VPS，裸机，docker容器，甚至一堆容器。GitLab和Runners通过API通信，所以唯一的要求就是运行Runners的机器可以联网。Runner可以对应一个项目，也可以共享给多个项目。</p>
+
+<p>要创建一个能用的Runner，需要经过以下两步:</p>
+
+<ul>
+  <li><a href="https://docs.gitlab.com/runner/install/">安装</a></li>
+  <li><a href="https://docs.gitlab.com/ee/ci/runners/README.html#registering-a-specific-runner">配置</a></li>
+</ul>
+
+<p>具体更多的信息，可以查看这个<a href="https://docs.gitlab.com/ee/ci/introduction/">页面</a>。</p>
+:ET

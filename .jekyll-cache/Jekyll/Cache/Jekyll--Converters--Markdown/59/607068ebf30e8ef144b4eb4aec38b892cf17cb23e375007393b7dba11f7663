@@ -1,0 +1,112 @@
+I"<h2 id="简介">简介</h2>
+
+<p>Proc, Lambda, block一直是Ruby元编程当中绕不过去的问题，它们经常出现，用法也是多种多样，今天就来了解一些它们之间的不同。</p>
+
+<p>我们用代码示例:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Block Examples
+
+[1,2,3].each { |x| puts x*2 }   # block is in between the curly braces
+
+[1,2,3].each do |x|
+  puts x*2                    # block is everything between the do and end
+end
+
+# Proc Examples             
+p = Proc.new { |x| puts x*2 }
+[1,2,3].each(&amp;p)              # The '&amp;' tells ruby to turn the proc into a block
+
+proc = Proc.new { puts "Hello World" }
+proc.call                     # The body of the Proc object gets executed when called
+
+# Lambda Examples            
+lam = lambda { |x| puts x*2 }
+[1,2,3].each(&amp;lam)
+
+lam = lambda { puts "Hello World" }
+lam.call
+</code></pre></div></div>
+
+<p>虽然看起来都是差不多的，但是还是有细微的区别。</p>
+
+<p>首先我们来看一下<code class="highlighter-rouge">Proc</code>和<code class="highlighter-rouge">Block</code>的区别：</p>
+
+<ol>
+  <li><code class="highlighter-rouge">Proc</code>是对象, 但是<code class="highlighter-rouge">Block</code>不是</li>
+</ol>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>p = Proc.new { puts "Hello World" }
+
+p.call  # prints 'Hello World'
+p.class # returns 'Proc'
+a = p   # a now equals p, a Proc instance
+p       # returns a proc object '#&lt;Proc:0x007f96b1a60eb0@(irb):46&gt;'
+
+{ puts "Hello World"}       # syntax error  
+a = { puts "Hello World"}   # syntax error
+[1,2,3].each {|x| puts x*2} # only works as part of the syntax of a method call
+</code></pre></div></div>
+
+<ol>
+  <li>参数列表中最多只能有一个<code class="highlighter-rouge">Block</code>, 但是<code class="highlighter-rouge">Proc</code>可以有多个</li>
+</ol>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def multiple_procs(proc1, proc2)
+  proc1.call
+  proc2.call
+end
+
+a = Proc.new { puts "First proc" }
+b = Proc.new { puts "Second proc" }
+
+multiple_procs(a,b)
+</code></pre></div></div>
+
+<p>我们再来看一下<code class="highlighter-rouge">Proc</code>和<code class="highlighter-rouge">Lambda</code>的区别:</p>
+
+<p>在我们讨论这两个的区别之前，我们要知道一点，那就是它们都是<code class="highlighter-rouge">Proc</code>对象。</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>proc = Proc.new { puts "Hello world" }
+lam = lambda { puts "Hello World" }
+
+proc.class # returns 'Proc'
+lam.class  # returns 'Proc'
+</code></pre></div></div>
+
+<p>它们的不同之处在于返回(<code class="highlighter-rouge">return</code>)的地方不同，且<code class="highlighter-rouge">lambda</code>会严格检查传入的参数。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>lam = lambda { |x| puts x }    # creates a lambda that takes 1 argument
+lam.call(2)                    # prints out 2
+lam.call                       # ArgumentError: wrong number of arguments (0 for 1)
+lam.call(1,2,3)                # ArgumentError: wrong number of arguments (3 for 1)
+
+lam = lambda{|x,y,z| puts x,y,z}
+lam.call(2,3,4)                # returns nil
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>proc = Proc.new { |x| puts x } # creates a proc that takes 1 argument
+proc.call(2)                   # prints out 2
+proc.call                      # returns nil
+proc.call(1,2,3)               # prints out 1 and forgets about the extra arguments
+
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def lambda_test
+  lam = lambda { return }
+  lam.call
+  puts "Hello world"
+end
+
+lambda_test                 # calling lambda_test prints 'Hello World'
+
+#我们可以看见在lam.call之后，仍然运行了puts操作
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def proc_test
+  proc = Proc.new { return }
+  proc.call
+  puts "Hello world"
+end
+
+proc_test                 # calling proc_test prints nothing
+#而proc则在proc.call时就返回了
+</code></pre></div></div>
+:ET

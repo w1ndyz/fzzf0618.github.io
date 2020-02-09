@@ -1,0 +1,186 @@
+I"�<h2 id="引言">引言</h2>
+<p><code class="highlighter-rouge">Polymorphic</code>多态关联是我一直没怎么弄明白的关联方式。下面来一起研究研究。</p>
+
+<p>假设我们有两个<code class="highlighter-rouge">model</code>，一个是<code class="highlighter-rouge">user</code>，另外一个是<code class="highlighter-rouge">company</code>。他们都有一个共同的内容就是<code class="highlighter-rouge">description</code>。这个时候，我们就可以用多态关联来创建它:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rails g scaffold company name website
+rails g scaffold users first_name last_name email birth_date:date
+rails g model note notable:references{polymorphic} description:text
+</code></pre></div></div>
+<p>那么通过polymorphic创建出来的<code class="highlighter-rouge">migrate</code>是什么样的呢？我们来看一下:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>class CreateNotes &lt; ActiveRecord::Migration[5.1]
+  def change
+    create_table :notes do |t|
+      t.references :notable, polymorphic: true
+      t.text :description
+
+      t.timestamps
+    end
+  end
+end
+</code></pre></div></div>
+<p>在<code class="highlighter-rouge">rake db:migrate</code>之后，<code class="highlighter-rouge">schema</code>文件中：</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>create_table "notes", force: :cascade do |t|
+  t.string "notable_type"
+  t.integer "notable_id"
+  t.text "description"
+  t.datetime "created_at", null: false
+  t.datetime "updated_at", null: false
+  t.index ["notable_type", "notable_id"], name: "index_notes_on_notable_type_and_notable_id"
+end
+</code></pre></div></div>
+<p>我们可以看到，它创建了一个<code class="highlighter-rouge">notable_type</code>, 还有<code class="highlighter-rouge">notable_id</code>。并且还创建了他们分别对应的索引。</p>
+
+<p>在对应的<code class="highlighter-rouge">model</code>文件中，我们要建立对应的关联:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>note.rb
+
+class Note &lt; ApplicationRecord
+  belongs_to :notable, polymorphic: true
+end
+</code></pre></div></div>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>user.rb
+
+class User &lt; ApplicationRecord
+  has_many :notes, as: :notable
+end
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>company.rb
+
+class Company &lt; ApplicationRecord
+  has_many :notes, as: :notable
+end
+</code></pre></div></div>
+
+<p>在创建路由的时候：</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>routes.rb
+
+Rails.application.routes.draw do
+  resources :companies do
+    resources :notes, module: :companies
+  end
+
+  resources :users do
+    resources :notes, module: :users
+  end
+
+  ...
+end
+
+</code></pre></div></div>
+
+<p>如果我们需要创建<code class="highlighter-rouge">user</code>, <code class="highlighter-rouge">company</code>所对应的<code class="highlighter-rouge">note</code>，我们可以这样:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>notes_controller.rb
+
+class NotesController &lt; ApplicationController
+  def new
+    @note = @notable.notes.new
+  end
+
+  def create
+    @note = @notable.notes.new note_params
+    @notable.save
+    redirect_to @notable, notice: "Your note was successfully posted."
+  end
+
+  private
+
+    def note_params
+      params.require(:note).permit(:description)
+    end
+end
+</code></pre></div></div>
+
+<p>在另外两个<code class="highlighter-rouge">controller</code>中，创建<code class="highlighter-rouge">@notable</code>:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>users/notes_controller.rb
+
+class Users::NotesController &lt; NotesController
+  before_action :set_notable
+
+  private
+
+    def set_notable
+      @notable = User.find(params[:user_id])
+    end
+end
+
+companies/notes_controller.rb
+
+class Companies::NotesController &lt; NotesController
+  before_action :set_notable
+  
+  def create
+    # NOTIFY
+    super #这里的super会继承NotesController里的create
+  end
+
+  private
+
+    def set_notable
+      @notable = Company.find(params[:company_id])
+    end
+end
+</code></pre></div></div>
+<p>在对应的<code class="highlighter-rouge">html</code>文件中：</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>users/show.html.erb
+
+&lt;%= render partial: "notes/notes", locals: {notable: @user} %&gt;
+&lt;%= render partial: "notes/form", locals: {notable: @user} %&gt;
+
+companies/show.html.erb
+
+&lt;%= render partial: "notes/notes", locals: {notable: @company} %&gt;
+&lt;%= render partial: "notes/form", locals: {notable: @company} %&gt;
+</code></pre></div></div>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>notes/_form.html.erb
+
+&lt;%= form_with(model: [notable, Note.new], local: true) do |form| %&gt;
+  &lt;div class="field"&gt;
+    &lt;%= form.label :description %&gt;&lt;br/&gt;
+    &lt;%= form.text_area :description %&gt;
+  &lt;/div&gt;
+  &lt;%= form.submit class: "btn btn-primary" %&gt;
+&lt;% end %&gt;
+
+notes/_notes.html.erb
+
+&lt;h3&gt;Notes&lt;/h3&gt;
+&lt;% notable.notes.each do |note| %&gt;
+  &lt;p&gt;
+    &lt;hr&gt;
+    &lt;%= note.content %&gt;
+    &lt;em&gt;&lt;%= time_ago_in_words note.created_at %&gt;&lt;/em&gt;
+  &lt;/p&gt;
+&lt;% end %&gt;
+</code></pre></div></div>
+
+<p>创建成功后，表结构为:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>id</th>
+      <th>notable_type</th>
+      <th>notable_id</th>
+      <th>description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>User</td>
+      <td>1</td>
+      <td>创建了一个des</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Company</td>
+      <td>1</td>
+      <td>公司的描述为xxx</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>这里的<code class="highlighter-rouge">notable_id</code>是对应到各个<code class="highlighter-rouge">model</code>中的<code class="highlighter-rouge">id</code>。</p>
+
+<p><code class="highlighter-rouge">polymorphic</code>多态关联，让表结构重复的地方更简单，让关联也更加清晰。</p>
+:ET

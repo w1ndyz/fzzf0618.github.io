@@ -1,0 +1,3 @@
+I"><h4 id="记一次elasticsearch-java-client的分页问题">记一次elasticsearch Java client的分页问题</h4>
+<p>最近在写关于数据导出的工具，用到了<code class="highlighter-rouge">kafka</code>， <code class="highlighter-rouge">flume</code>， <code class="highlighter-rouge">mysql</code>， <code class="highlighter-rouge">oracle</code>， <code class="highlighter-rouge">sql_server</code>, <code class="highlighter-rouge">mongodb</code>。其中遇到了很多的小问题，总结一下，以防今后遇到。首先来谈一下es的分页问题:</p>
+:ET

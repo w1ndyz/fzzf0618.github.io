@@ -1,0 +1,100 @@
+I"�D<h4 id="记一次elasticsearch-java-client的分页问题">记一次elasticsearch Java client的分页问题</h4>
+<p>最近在写关于数据导出的工具，用到了<code class="highlighter-rouge">kafka</code>， <code class="highlighter-rouge">flume</code>， <code class="highlighter-rouge">mysql</code>， <code class="highlighter-rouge">oracle</code>， <code class="highlighter-rouge">sql_server</code>, <code class="highlighter-rouge">mongodb</code>。其中遇到了很多的小问题，总结一下，以防今后遇到。首先来谈一下es的分页问题:</p>
+
+<h5 id="问题是如何产生的">问题是如何产生的？</h5>
+
+<p>首先在查询es的时候是可以用from，size这种查询方式的。但是在查询结果大于1w条的时候，他就会不起作用了，这个时候我们要使用<code class="highlighter-rouge">scroll</code>。</p>
+
+<h5 id="如何使用scroll">如何使用scroll？</h5>
+
+<p><code class="highlighter-rouge">scroll</code>的原理就是，在查询es的时候，先固定一个时间片段的数据，然后再这个时间片段的数据中反复进行分页查询。查询需要定义一个size。在每一次查询的过程中，会返回一个<code class="highlighter-rouge">scroll_id</code>，是一串很长的加密后的字符串。在下一次查询的过程中，带上这个<code class="highlighter-rouge">scroll_id</code>，它就会继续上一次的查询往下查<code class="highlighter-rouge">size</code>条数据。
+我们在官方的文档中可以看到scroll的用法是:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="w">  </span><span class="err">POST</span><span class="w"> </span><span class="err">/twitter/_search?scroll=</span><span class="mi">1</span><span class="err">m</span><span class="w">
+  </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"size"</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"query"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+          </span><span class="nl">"match"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+              </span><span class="nl">"title"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"elasticsearch"</span><span class="w">
+          </span><span class="p">}</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+
+
+  </span><span class="err">POST</span><span class="w"> </span><span class="err">/_search/scroll</span><span class="w"> </span><span class="p">[</span><span class="err">image:</span><span class="mi">60</span><span class="err">C</span><span class="mi">7</span><span class="err">D</span><span class="mi">524-9</span><span class="err">CBC</span><span class="mi">-40</span><span class="err">B</span><span class="mi">1-84</span><span class="err">F</span><span class="mi">9-166</span><span class="err">B</span><span class="mi">27</span><span class="err">D</span><span class="mi">9</span><span class="err">DF</span><span class="mi">51-309-00008</span><span class="err">DA</span><span class="mi">230</span><span class="err">D</span><span class="mi">90</span><span class="err">CB</span><span class="mi">7</span><span class="err">/</span><span class="mi">1</span><span class="err">.png</span><span class="p">]</span><span class="w">
+  </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"scroll"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"1m"</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="err">image:</span><span class="mi">85</span><span class="err">F</span><span class="mi">4</span><span class="err">DBA</span><span class="mi">7-6</span><span class="err">D</span><span class="mi">48-46</span><span class="err">B</span><span class="mi">6-98</span><span class="err">A</span><span class="mi">4-681E1</span><span class="err">C</span><span class="mi">150</span><span class="err">FE</span><span class="mi">7-309-00008</span><span class="err">DA</span><span class="mi">230</span><span class="err">A</span><span class="mi">98</span><span class="err">BE</span><span class="mi">4</span><span class="err">/</span><span class="mi">2</span><span class="err">.png</span><span class="p">]</span><span class="w">
+      </span><span class="nl">"scroll_id"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"DXF1ZXJ5QW5kRmV0Y2gBAAAAAAAAAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ=="</span><span class="w"> </span><span class="p">[</span><span class="err">image:F</span><span class="mi">7277840-004</span><span class="err">F</span><span class="mi">-4</span><span class="err">F</span><span class="mi">16-91</span><span class="err">DD</span><span class="mi">-62</span><span class="err">F</span><span class="mi">5</span><span class="err">D</span><span class="mi">6</span><span class="err">BFF</span><span class="mi">7</span><span class="err">D</span><span class="mi">7-309-00008</span><span class="err">DA</span><span class="mi">230591</span><span class="err">EE</span><span class="mi">5</span><span class="err">/</span><span class="mi">3</span><span class="err">.png</span><span class="p">]</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>其中<code class="highlighter-rouge">scroll = 1m</code>的意思是，本次查询的时间挂起的长度为1分钟，在这一分中的时间里，数据是固定的，不会改变的，即使有新写入的数据，也不会在这个数据段中。</p>
+
+<h5 id="java-client的写法是什么样的">Java Client的写法是什么样的？</h5>
+
+<p>直接上代码:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;&gt;</span> <span class="n">resultList</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+  <span class="kd">private</span> <span class="kd">static</span> <span class="nc">RestHighLevelClient</span> <span class="n">restHighLevelClient</span><span class="o">;</span> <span class="err">#我这里用的是</span><span class="n">restClient</span><span class="o">,</span><span class="err">网上有很多用的</span><span class="n">client</span><span class="o">,</span><span class="n">prepare</span><span class="o">...()</span><span class="err">都可以。</span>
+  <span class="nc">SearchResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+  <span class="nc">SearchRequest</span> <span class="n">searchRequest</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">SearchRequest</span><span class="o">(</span><span class="no">ES_INDEX_NAME</span><span class="o">);</span> <span class="err">#查询的索引名称</span>
+  <span class="nc">SearchSourceBuilder</span> <span class="n">searchSourceBuilder</span> <span class="o">=</span> <span class="nc">SearchSourceBuilder</span><span class="o">.</span><span class="na">searchSource</span><span class="o">();</span>
+  <span class="nc">String</span><span class="o">[]</span> <span class="n">includeFields</span> <span class="o">=</span> <span class="n">fieldString</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">","</span><span class="o">);</span> <span class="err">#需要查询的字段</span><span class="o">[</span><span class="s">"user_id"</span><span class="o">,</span> <span class="s">"user_name"</span><span class="o">,</span> <span class="s">"create_at"</span><span class="o">......]</span>
+  <span class="nc">String</span><span class="o">[]</span> <span class="n">excludeFields</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">String</span><span class="o">[]</span> <span class="o">{</span><span class="s">""</span><span class="o">};</span>
+  <span class="nc">BoolQueryBuilder</span> <span class="n">boolQueryBuilder</span> <span class="o">=</span> <span class="nc">QueryBuilders</span><span class="o">.</span><span class="na">boolQuery</span><span class="o">();</span>
+  <span class="nc">RangeQueryBuilder</span> <span class="n">timeRange</span> <span class="o">=</span> <span class="nc">QueryBuilders</span><span class="o">.</span><span class="na">rangeQuery</span><span class="o">(</span><span class="n">timeField</span><span class="o">);</span>
+  <span class="n">timeRange</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">start_time</span><span class="o">);</span> <span class="err">#查询的开始时间</span>
+  <span class="n">timeRange</span><span class="o">.</span><span class="na">to</span><span class="o">(</span><span class="n">en_time</span><span class="o">);</span> <span class="err">#查询的结束时间</span>
+  <span class="n">boolQueryBuilder</span><span class="o">.</span><span class="na">must</span><span class="o">(</span><span class="n">timeRange</span><span class="o">);</span>
+  <span class="n">searchSourceBuilder</span><span class="o">.</span><span class="na">fetchSource</span><span class="o">(</span><span class="n">includeFields</span><span class="o">,</span> <span class="n">excludeFields</span><span class="o">);</span>
+  <span class="n">searchSourceBuilder</span><span class="o">.</span><span class="na">query</span><span class="o">(</span><span class="n">boolQueryBuilder</span><span class="o">);</span>
+  <span class="c1">// 因为数据量过大（超过1w），需要用scroll游标</span>
+  <span class="kd">final</span> <span class="nc">Scroll</span> <span class="n">globalScroll</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Scroll</span><span class="o">(</span><span class="nc">TimeValue</span><span class="o">.</span><span class="na">timeValueMinutes</span><span class="o">(</span><span class="mi">1L</span><span class="o">));</span>
+  <span class="n">searchSourceBuilder</span><span class="o">.</span><span class="na">size</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">pullCount</span><span class="o">);</span> <span class="err">#拉取数据的</span><span class="n">size</span>
+  <span class="n">searchRequest</span><span class="o">.</span><span class="na">scroll</span><span class="o">(</span><span class="n">globalScroll</span><span class="o">);</span> <span class="err">#设置游标</span>
+  <span class="n">searchRequest</span><span class="o">.</span><span class="na">source</span><span class="o">(</span><span class="n">searchSourceBuilder</span><span class="o">);</span>
+  <span class="k">try</span> <span class="o">{</span>
+      <span class="n">response</span> <span class="o">=</span> <span class="n">restHighLevelClient</span><span class="o">.</span><span class="na">search</span><span class="o">(</span><span class="n">searchRequest</span><span class="o">);</span>
+  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+  <span class="o">}</span>
+  <span class="n">parseSearchResponse</span><span class="o">(</span><span class="n">response</span><span class="o">);</span> <span class="err">#处理分页的结果</span>
+
+  <span class="c1">//获取总数量</span>
+  <span class="kt">long</span> <span class="n">totalCount</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">getHits</span><span class="o">().</span><span class="na">getTotalHits</span><span class="o">();</span>
+  <span class="kt">int</span> <span class="n">page</span><span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">((</span><span class="kt">int</span><span class="o">)</span><span class="n">totalCount</span><span class="o">/</span><span class="n">pullCount</span><span class="o">);</span>
+  <span class="nc">String</span> <span class="n">scrollId</span> <span class="o">=</span> <span class="s">""</span><span class="o">;</span>
+  <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">page</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+      <span class="c1">//再次发送请求,并使用上次搜索结果的ScrollId</span>
+      <span class="n">scrollId</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">getScrollId</span><span class="o">();</span>
+      <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"scrollId"</span> <span class="o">+</span> <span class="n">scrollId</span><span class="o">);</span>
+      <span class="nc">SearchScrollRequest</span> <span class="n">scrollRequest</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">SearchScrollRequest</span><span class="o">(</span><span class="n">scrollId</span><span class="o">);</span>
+      <span class="n">scrollRequest</span><span class="o">.</span><span class="na">scroll</span><span class="o">(</span><span class="n">globalScroll</span><span class="o">);</span>
+      <span class="n">response</span> <span class="o">=</span> <span class="n">restHighLevelClient</span><span class="o">.</span><span class="na">searchScroll</span><span class="o">(</span><span class="n">scrollRequest</span><span class="o">);</span>
+      <span class="n">parseSearchResponse</span><span class="o">(</span><span class="n">response</span><span class="o">);</span> <span class="err">#处理分页的结果</span>
+  <span class="o">}</span>
+  <span class="c1">// 清空scroll游标</span>
+  <span class="nc">ClearScrollRequest</span> <span class="n">clearScrollRequest</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ClearScrollRequest</span><span class="o">();</span>
+  <span class="n">clearScrollRequest</span><span class="o">.</span><span class="na">addScrollId</span><span class="o">(</span><span class="n">scrollId</span><span class="o">);</span>
+  <span class="nc">ClearScrollResponse</span> <span class="n">clearScrollResponse</span> <span class="o">=</span> <span class="n">restHighLevelClient</span><span class="o">.</span><span class="na">clearScroll</span><span class="o">(</span><span class="n">clearScrollRequest</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>下面是查询的方法:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 处理分页结果</span>
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">parseSearchResponse</span><span class="o">(</span><span class="nc">SearchResponse</span> <span class="n">response</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;&gt;</span> <span class="n">resultList</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+    <span class="nc">SearchHit</span><span class="o">[]</span> <span class="n">searchHits</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">getHits</span><span class="o">().</span><span class="na">getHits</span><span class="o">();</span>
+    <span class="c1">// 解析当前查询结果</span>
+    <span class="k">for</span><span class="o">(</span><span class="nc">SearchHit</span> <span class="n">thisHits</span> <span class="o">:</span> <span class="n">searchHits</span><span class="o">){</span>
+        <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="n">thisHits</span><span class="o">.</span><span class="na">getSourceAsMap</span><span class="o">();</span>
+        <span class="n">resultList</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">map</span><span class="o">);</span>
+    <span class="o">}</span>
+  <span class="n">resultList</span><span class="o">;</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h5 id="总结">总结:</h5>
+
+<p>在游标查询的时候，我们可以先查询一次结果，然后分片(<code class="highlighter-rouge">page</code>)，每片遍历去查。直到page查询完毕。得到所有的结果。</p>
+:ET
