@@ -1,0 +1,125 @@
+I"�"<h4 id="多阶段构建">多阶段构建</h4>
+
+<p>在构建镜像的时候，我们会发现:</p>
+
+<ul>
+  <li>rails的应用体积很大</li>
+  <li>构建时间过长</li>
+</ul>
+
+<p>于是多阶段构建出现了，它将一个镜像的构建分为多个阶段。比如rails应用，ruby环境为一个构建阶段，rails应用所需的数据库，webpacker为下一个构建阶段。</p>
+
+<p>具体构建方式，可参照<a href="https://blog.wildcat.io/2019/06/rails-with-docker-part-1-zh/">高效构建镜像</a>,这篇blog详细介绍了各个构建阶段的步骤，以及为何要这么做。可根据自己的需要，构建自己的rails镜像。</p>
+
+<h4 id="docker-compose">Docker Compose</h4>
+
+<p>Docker Compose 是一个轻松、高效的管理容器，他是一个用于定义和运行多容器的Docker的应用程序。他将所管理的容器分为了三层:</p>
+
+<ul>
+  <li>工程 project</li>
+  <li>服务 service</li>
+  <li>容器 container</li>
+</ul>
+
+<p>Docker Compose 会运行目录下的<code class="highlighter-rouge">docker-compsoe.yml</code>配置文件组成一个工程，一个工程将包含多个服务，每个服务又定义了容器运行的镜像、参数、依赖，一个服务也可包含多个容器实例。</p>
+
+<p>下面将会举一个例子来看看，具体的compose文件如何配置:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nn">---</span>
+<span class="c1">#声明docker-compose的版本</span>
+<span class="na">version</span><span class="pi">:</span> <span class="s2">"</span><span class="s">3.6"</span>
+
+<span class="na">services</span><span class="pi">:</span>
+  <span class="na">app</span><span class="pi">:</span> <span class="nl">&amp;app_base</span>
+    <span class="na">container_name</span><span class="pi">:</span> <span class="s1">'</span><span class="s">app</span>
+    <span class="s">env_file:</span>
+      <span class="s">-</span><span class="nv"> </span><span class="s">docker.env</span>
+    <span class="s">#镜像地址</span>
+    <span class="s">image:</span><span class="nv"> </span><span class="s">app.1.0.master</span>
+    <span class="s">volumes:</span>
+      <span class="s">-</span><span class="nv"> </span><span class="s">assets:/home/app/app/public</span>
+      <span class="s">-</span><span class="nv"> </span><span class="s">/etc/localtime:/etc/localtime:ro</span>
+    <span class="s">configs:</span>
+      <span class="s">-</span><span class="nv"> </span><span class="s">source:</span><span class="nv"> </span><span class="s">database_conf</span>
+        <span class="s">target:</span><span class="nv"> </span><span class="s">/home/app/app_name/config/database.yml</span>
+      <span class="s">-</span><span class="nv"> </span><span class="s">source:</span><span class="nv"> </span><span class="s">mongoid_conf</span>
+        <span class="s">target:</span><span class="nv"> </span><span class="s">/home/app/app_name/config/mongoid.yml</span>
+      <span class="s">-</span><span class="nv"> </span><span class="s">source:</span><span class="nv"> </span><span class="s">puma_conf</span>
+        <span class="s">target:</span><span class="nv"> </span><span class="s">/home/app/app_name/config/puma.rb</span>
+      <span class="s">-</span><span class="nv"> </span><span class="s">source:</span><span class="nv"> </span><span class="s">secrets_conf</span>
+        <span class="s">target:</span><span class="nv"> </span><span class="s">/home/app/app_name/config/secrets.yml</span>
+      <span class="s">-</span><span class="nv"> </span><span class="s">source:</span><span class="nv"> </span><span class="s">sidekiq_conf</span>
+        <span class="s">target:</span><span class="nv"> </span><span class="s">/home/app/app_name/config/sidekiq.yml</span>
+    <span class="s">logging:</span>
+      <span class="s">options:</span>
+        <span class="s">max-size:</span><span class="nv"> </span><span class="s">"1g"</span>
+        <span class="s">max-file:</span><span class="nv"> </span><span class="s">"10"</span>
+    <span class="s">command:</span><span class="nv"> </span><span class="s">/home/app/app_name/bin/docker-start</span>
+    <span class="s">#docker-swarm设置worker角色</span>
+    <span class="s">deploy:</span>
+      <span class="s">replicas:</span><span class="nv"> </span><span class="s">2</span>
+      <span class="s">placement:</span>
+        <span class="s">constraints:</span><span class="nv"> </span><span class="s">[node.role</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">worker]</span>
+    <span class="s">ports:</span>
+      <span class="s">-</span><span class="nv"> </span><span class="s">"7000:7000"</span>
+    <span class="s">#健康检查，用于服务器挂了之后自动重启</span>
+    <span class="s">healthcheck:</span>
+      <span class="s">test:</span><span class="nv"> </span><span class="s">"curl</span><span class="nv"> </span><span class="s">-fs</span><span class="nv"> </span><span class="s">localhost:7000</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">exit</span><span class="nv"> </span><span class="s">1"</span>
+      <span class="s">interval:</span><span class="nv"> </span><span class="s">30s</span>
+      <span class="s">timeout:</span><span class="nv"> </span><span class="s">40s</span>
+      <span class="s">retries:</span><span class="nv"> </span><span class="s">60</span>
+    <span class="s">networks:</span>
+      <span class="s">-</span><span class="nv"> </span><span class="s">overlay</span>
+      
+ <span class="s">#sidekiq</span>
+  <span class="s">worker:</span>
+    <span class="s">&lt;&lt;:</span><span class="nv"> </span><span class="s">*app_base</span>
+    <span class="s">container_name:</span><span class="nv"> </span><span class="s">'app_name_worker'</span>
+    <span class="na">deploy</span><span class="pi">:</span>
+      <span class="na">replicas</span><span class="pi">:</span> <span class="m">1</span>
+      <span class="na">placement</span><span class="pi">:</span>
+        <span class="na">constraints</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">node.role == manager</span><span class="pi">]</span>
+    <span class="na">ports</span><span class="pi">:</span> <span class="pi">[]</span>
+    <span class="na">command</span><span class="pi">:</span> <span class="s">bundle exec sidekiq -C config/sidekiq.yml -L /home/app/app_name/log/sidekiq.log</span>
+    <span class="na">healthcheck</span><span class="pi">:</span>
+      <span class="na">test</span><span class="pi">:</span> <span class="s2">"</span><span class="s">stat</span><span class="nv"> </span><span class="s">/home/app/app_name/tmp/sidekiq.pid</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">exit</span><span class="nv"> </span><span class="s">1"</span>
+      <span class="na">interval</span><span class="pi">:</span> <span class="s">30s</span>
+      <span class="na">timeout</span><span class="pi">:</span> <span class="s">40s</span>
+      <span class="na">retries</span><span class="pi">:</span> <span class="m">60</span>
+
+<span class="na">configs</span><span class="pi">:</span>
+  <span class="na">database_conf</span><span class="pi">:</span>
+    <span class="na">external</span><span class="pi">:</span> <span class="no">true</span>
+  <span class="na">mongoid_conf</span><span class="pi">:</span>
+    <span class="na">external</span><span class="pi">:</span> <span class="no">true</span>
+  <span class="na">secrets_conf</span><span class="pi">:</span>
+    <span class="na">external</span><span class="pi">:</span> <span class="no">true</span>
+  <span class="na">puma_conf</span><span class="pi">:</span>
+    <span class="na">external</span><span class="pi">:</span> <span class="no">true</span>
+  <span class="na">sidekiq_conf</span><span class="pi">:</span>
+    <span class="na">external</span><span class="pi">:</span> <span class="no">true</span>
+
+<span class="na">networks</span><span class="pi">:</span>
+  <span class="na">overlay</span><span class="pi">:</span>
+
+<span class="na">volumes</span><span class="pi">:</span>
+  <span class="na">assets</span><span class="pi">:</span>
+
+</code></pre></div></div>
+
+<p>上面代码所用到的<code class="highlighter-rouge">bin/docker-start</code></p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env sh</span>
+bundle <span class="nb">exec </span>rails assets:precompile
+bundle <span class="nb">exec </span>rails db:migrate
+bundle <span class="nb">exec </span>puma <span class="nt">-C</span> config/puma.rb
+
+</code></pre></div></div>
+
+<p>在后面我们将会使用docker-compose来构建一个rails应用。</p>
+
+<p>[注释]</p>
+<ul>
+  <li><a href="https://yeasy.gitbooks.io/docker_practice/compose/introduction.html">Docker Compose简介及使用</a></li>
+</ul>
+:ET
