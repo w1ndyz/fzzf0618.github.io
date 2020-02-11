@@ -1,0 +1,169 @@
+I"�(<h4 id="portainer">Portainer</h4>
+
+<p>在使用Docker swarm部署项目时，我们先要了解一个工具–<a href="https://github.com/portainer/portainer">Portainer</a>。</p>
+
+<p>Portainer是一个轻量级的管理Docker的UI。他允许我们管理所有的Docker资源(容器，映像，卷，网络等)。他与独立的Docker引擎和Docker Swarm模式兼容。</p>
+
+<h4 id="docker-swarm">Docker Swarm</h4>
+
+<p>Docker Swarm 是Docker引擎内置(原生)的集群管理和编排工具。</p>
+
+<p>使用 <code class="highlighter-rouge">Swarm</code> 集群之前需要了解以下几个概念。</p>
+
+<ul>
+  <li>节点</li>
+  <li>服务和任务</li>
+</ul>
+
+<p>节点分为管理(manager)节点和工作(worker)节点。一个Swarm可以有多个管理节点，但只有一个管理节点可以成为<code class="highlighter-rouge">leader</code>，<code class="highlighter-rouge">leader</code>通过<code class="highlighter-rouge">raft</code>协议实现。工作节点是任务执行的节点，管理节点将任务或服务(service)下发到工作节点执行。管理节点默认也作为工作节点。下面这张图片展示了集群中管理节点和工作节点的关系:</p>
+
+<p><img src="/assets/swarm-diagram.png" alt="" /></p>
+
+<p>任务(Task)是Swarm中的最小调度单位,目前来说就是一个单一的容器。</p>
+
+<p>服务(Services)是指一组任务的集合，服务有两种模式:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">replicated services</code> 按照一定规则在各个工作节点上运行指定个数的任务。</li>
+  <li><code class="highlighter-rouge">global services</code> 每个工作节点上运行一个任务</li>
+</ul>
+
+<p>两种模式通过 <code class="highlighter-rouge">docker service create</code> 的 <code class="highlighter-rouge">--mode</code> 参数指定。</p>
+
+<p>接下来我们来模拟Docker Swarm的部署，从下面的示例来观察一些细节。</p>
+
+<h4 id="部署示例">部署示例</h4>
+
+<p>前期准备:</p>
+
+<ul>
+  <li>web服务器2台</li>
+  <li>数据库1台</li>
+  <li>队列1台</li>
+</ul>
+
+<h5 id="上传docker-compose及配置文件至cron队列服务器将队列服务器作为swarm的manager节点">上传docker-compose及配置文件至cron队列服务器，将队列服务器作为swarm的manager节点。</h5>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># 本地</span>
+<span class="nv">$ </span>rsync app-docker.tar cron:/data/
+
+<span class="c"># cron服务器</span>
+<span class="nv">$ </span><span class="nb">cd</span> /data
+<span class="nv">$ </span><span class="nb">tar</span> <span class="nt">-xvf</span> app-docker.tar
+<span class="c"># 安装docker</span>
+<span class="nv">$ </span>apt <span class="nb">install </span>docker.io <span class="nt">-y</span>
+<span class="c"># 创建docker swarm</span>
+<span class="nv">$ </span>docker swarm init <span class="nt">--advertise-addr</span> your_ip
+
+​<span class="sb">```</span>
+Swarm initialized: current node <span class="o">(</span>s1fof4pev4rj8mzn0q8ymmqx4<span class="o">)</span> is now a manager.
+
+To add a worker to this swarm, run the following <span class="nb">command</span>:
+
+    docker swarm <span class="nb">join</span> <span class="nt">--token</span> SWMTKN-1-508f7r079pxy9ggos64nhm50dznkdmni4gafmj6aqhbr7hd86g-6pbu4jfmn3wm4hu00h1593s3q 192.168.0.1:2377
+
+To add a manager to this swarm, run <span class="s1">'docker swarm join-token manager'</span> and follow the instructions.
+​<span class="sb">```</span>
+
+
+<span class="c"># 进入其他两台web服务器</span>
+<span class="nv">$ </span>docker swarm <span class="nb">join</span> <span class="nt">--token</span> SWMTKN-1-508f7r079pxy9ggos64nhm50dznkdmni4gafmj6aqhbr7hd86g-6pbu4jfmn3wm4hu00h1593s3q 192.168.0.1:2377
+
+​<span class="sb">```</span>
+This node joined a swarm as a worker.
+​<span class="sb">```</span>
+
+<span class="c"># cron服务器查看各个节点信息</span>
+<span class="nv">$ </span>docker node <span class="nb">ls</span>
+
+​<span class="sb">```</span>
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS      ENGINE VERSION
+ium2q83ucn30m62q0oz6y0pq4     appweb1            Ready               Active                                  18.09.7
+zz22kpep91y35v62s3yrvg7yp     appweb2            Ready               Active                                  18.09.7
+s1fof4pev4rj8mzn0q8ymmqx4 <span class="k">*</span>   quene               Ready               Active              Leader              18.09.7
+​<span class="sb">```</span>
+
+<span class="c"># 修改conf/secrets.yml中的队列开关</span>
+​<span class="sb">```</span>
+	<span class="c"># job</span>
+  schedule_job_enabled: <span class="nb">true</span>
+​<span class="sb">```</span>
+</code></pre></div></div>
+
+<h5 id="创建docker-swarm监控">创建Docker Swarm监控</h5>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># 启动docker监控portainer</span>
+<span class="nv">$ </span>docker stack deploy <span class="nt">--compose-file</span><span class="o">=</span>portainer-agent-stack.yml portainer
+</code></pre></div></div>
+
+<p>其中<code class="highlighter-rouge">portainer-agent-stack.yml</code>的配置可以看<a href="https://portainer.readthedocs.io/en/latest/deployment.html">这里</a>。</p>
+
+<h5 id="接下来第一次部署登陆服务器拉取最新的镜像">接下来第一次部署，登陆服务器拉取最新的镜像</h5>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># 登陆私有docker registry仓库</span>
+<span class="nv">$ </span>docker login <span class="nt">-u</span> username <span class="nt">-p</span> <span class="nb">pwd </span>xxxxx.com:5000
+
+<span class="c"># 拉取最新的镜像</span>
+<span class="nv">$ </span>docker pull xxxxx.com:5000/app:1.0.0.master
+</code></pre></div></div>
+
+<h5 id="创建配置文件并进行部署">创建配置文件，并进行部署</h5>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># 创建docker配置文件</span>
+<span class="nv">$ </span>./scripts/init_config
+
+<span class="c"># 启动容器部署</span>
+<span class="nv">$ </span>docker stack deploy <span class="nt">--with-registry-auth</span> <span class="nt">-c</span> docker-compose.yml app_name
+
+<span class="c"># 查看容器运行状态</span>
+<span class="nv">$ </span>docker service <span class="nb">ls</span>
+</code></pre></div></div>
+
+<p>其中<code class="highlighter-rouge">init_config</code>文件</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+
+<span class="nb">cd</span> <span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/config
+<span class="nv">conf_size</span><span class="o">=</span><span class="sb">`</span>docker config <span class="nb">ls</span>|grep database|wc <span class="nt">-l</span><span class="sb">`</span>
+
+<span class="k">if</span> <span class="o">[</span> <span class="nv">$conf_size</span> <span class="nt">-gt</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+  </span>docker config <span class="nb">rm </span>database_conf <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> docker config <span class="nb">rm </span>mongoid_conf <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> docker config <span class="nb">rm </span>secrets_conf <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> docker config <span class="nb">rm </span>puma_conf <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> docker config <span class="nb">rm </span>sidekiq_conf <span class="se">\</span>
+<span class="k">fi
+
+</span>docker config create database_conf database.yml <span class="se">\</span>
+  <span class="o">&amp;&amp;</span> docker config create mongoid_conf mongoid.yml <span class="se">\</span>
+  <span class="o">&amp;&amp;</span> docker config create secrets_conf secrets.yml <span class="se">\</span>
+  <span class="o">&amp;&amp;</span> docker config create puma_conf puma.rb <span class="se">\</span>
+  <span class="o">&amp;&amp;</span> docker config create sidekiq_conf sidekiq.yml
+
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">docker config </code>子命令，用来管理集群中的配置信息，无需将配置文件放入镜像或挂载到容器中就可以实现对服务的配置。</p>
+
+<h5 id="关于监控portainer的使用">关于监控Portainer的使用</h5>
+
+<ul>
+  <li>在<code class="highlighter-rouge">Registries</code>新增自己的私有镜像仓库</li>
+  <li>每次更新可以先在<code class="highlighter-rouge">Images</code>下拉取最新的镜像到对应的服务器中</li>
+  <li>更新可以进入<code class="highlighter-rouge">Stacks</code>点击对应的服务进去，选择并<code class="highlighter-rouge">Update</code>，可勾选是否使用最新的镜像</li>
+  <li>配置文件可以在<code class="highlighter-rouge">Configs</code>中查看</li>
+  <li>日志可以在<code class="highlighter-rouge">Services</code>中点击对应的服务进入，点击<code class="highlighter-rouge">Service logs</code>查看日志</li>
+  <li>更新失败的日志，可以在<code class="highlighter-rouge">Stacks</code>中点击对应服务器的日志查看</li>
+</ul>
+
+<h5 id="关于配置文件的滚动更新">关于配置文件的滚动更新</h5>
+
+<p>当需要修改config配置的内容时，创建新配置（使用docker config create）然后更新服务以删除先前配置的config，并添加对新配置是一种常见模式。服务命令<code class="highlighter-rouge">--config-rm</code>和<code class="highlighter-rouge">--config-add</code>:</p>
+
+<p>比如我修改了secrets.yml，而现在在执行<code class="highlighter-rouge">docker config ls</code>时候已经存在secrets_conf</p>
+
+<p>这时候我执行下面命令，重新创建个新的配置，比如创建secrets_conf_1
+docker config create secrets_conf_1 config/secrets.yml</p>
+
+<p>然后执行下面进行config更新
+docker service update –config-rm database_log_conf –config-add src=database_log_conf_1,target=/home/app/app_name/config/database_log.yml app_name</p>
+:ET
